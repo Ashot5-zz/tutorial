@@ -8,18 +8,25 @@ from .models import Snippet
 from .serializers import SnippetSerializer, UserSerializer
 from rest_framework import renderers, viewsets
 from rest_framework import permissions
-from django.conf.urls import url
-from rest_framework_swagger.views import get_swagger_view
+import coreapi
+from rest_framework.schemas import AutoSchema
 
 
-schema_view = get_swagger_view(title='Pastebin API')
 
-urlpatterns = [
-    url(r'^$', schema_view)
-]
+class SnippetsViewSchemas(AutoSchema):
+
+    def get_manual_fields(self, path, method):
+        extra_fields = []
+        if method.lower() in ['post', 'put']:
+            extra_fields = [ coreapi.Field('language')]
+        manual_fields = super().get_manual_fields(path, method)
+        return manual_fields + extra_fields
 
 
 class SnippetViewSet(viewsets.ModelViewSet):
+
+    schema = SnippetsViewSchemas()
+
     queryset = Snippet.objects.all()
     serializer_class = SnippetSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly]
@@ -34,6 +41,9 @@ class SnippetViewSet(viewsets.ModelViewSet):
 
 
 class UserViewSet(viewsets.ReadOnlyModelViewSet):
+
+    schema = SnippetsViewSchemas()
+
     queryset = User.objects.all()
     serializer_class = UserSerializer
 
